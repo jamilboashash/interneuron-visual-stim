@@ -1,4 +1,4 @@
-avr-gcc -mmcu=atmega32 main.c -o main.elf
+#!/usr/bin/bash
+avr-gcc -mmcu=atmega324a main.c -o main.elf
 avr-objcopy -j .text -O ihex main.elf main.hex
-avrdude -c stk500v2 -p m324a -P /dev/ttyACM0 -b 19200 -U flash:w:main.hex
-
+avrdude -c stk500v2 -p m324a -P /dev/ttyACM0 -b 500000 -U flash:w:main.hex
