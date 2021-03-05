@@ -101,7 +101,6 @@ void run_cycle(Protocol input) {
     for (int i = 0; i < 12; i++) {
 
         if (input == RANDOM) {
-            // TODO do stuff?
 
             // if freq is 10, 40 or same as previous loop, randomise it
             while (plus_minus_5(freq, 10) || plus_minus_5(freq, 40) || plus_minus_5(freq, prevFreq)) {
@@ -114,7 +113,7 @@ void run_cycle(Protocol input) {
             print_random_freq(freq);
         }
 //        blink_led(freq, ONE_MIN, THREE_MINS);
-        blink_led(freq, 10, 10);  //todo delete me (test only)
+        blink_led(freq, 10, 10);  //todo delete me (for testing only)
     }
 }
 
@@ -128,21 +127,20 @@ void run_cycle(Protocol input) {
 //}
 
 // setup hardware including a random seed, baud rate for serial io, enable
-// interrupts, and make pins 2 and 3 on port b outputs
+// interrupts, and set data direction on pins
 void init_hardware() {
 
-    // TODO replace 10, feed random param into srand so it's not determinant
+    // TODO replace 10, feed random param into srand so it's non-deterministic
     srand(10);
 
-    // set baud rate to 19200 (page 200 datasheet)
-//    UBRR0 = 25;
-    UBRR0 = 0; // 500,000
+    // set baud rate to 500,000 (page 200 datasheet)
+    UBRR0 = 0;
 
     // enable transmission and receiving via UART and enable the Receive
     // Complete Interrupt (page 194-195 datasheet)
     UCSR0B = (1 << RXCIE0) | (1 << RXEN0) | (1 << TXEN0);
 
-    // Enable global interrupts
+    // enable global interrupts
     sei();
 
 //    clear_screen();
@@ -164,7 +162,7 @@ int main() {
             // extract character from UART Data register
             char protocol = UDR0;
 
-            // TODO signal output start bit to 2 photon system.
+            // TODO signal output start bit to 2 photon system
             run_cycle(protocol);
         }
     }
