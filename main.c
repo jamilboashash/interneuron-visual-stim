@@ -1,4 +1,4 @@
-//#define __AVR_ATmega324A__ // todo uncomment during development (only needed by CMake, not avr-gcc)
+#define __AVR_ATmega324A__ // todo uncomment during development (only needed by CMake, not avr-gcc)
 #define F_CPU 8000000UL // 8MHz
 #define ONE_MIN 60
 #define THREE_MINS 180
@@ -59,6 +59,7 @@ ISR(USART0_RX_vect) {
     inputReceived = 1;
 }
 
+
 // print the given frequency (freq) to terminal over serial port.
 void print_random_freq(int freq) {
 
@@ -110,10 +111,11 @@ void run_cycle(Protocol protocol) {
 
         if (protocol == RANDOM) {
 
-            // if freq is 10, 40 or same as previous loop, randomise it
+            // if the frequency (freq) equals 10, 40 or same as previous
+            // loop (prevFreq) plus or minus 5, then randomise it
             while (plus_minus_5(freq, 10) || plus_minus_5(freq, 40) || plus_minus_5(freq, prevFreq)) {
 
-                // mod80 to ensure 0 <= freq >= 80
+                // rand mod80 to ensure that 0 <= freq >= 80
                 freq = rand() % 80;
             }
 
@@ -121,7 +123,7 @@ void run_cycle(Protocol protocol) {
             print_random_freq(freq);
         }
 //        blink_led(freq, ONE_MIN, THREE_MINS);
-        blink_led(freq, 2, 2);  //todo delete me (for testing only)
+        blink_led(freq, 2, 2);  //todo (for testing only)
     }
 }
 
@@ -139,7 +141,7 @@ void run_cycle(Protocol protocol) {
 void init_hardware() {
 
     // TODO feed random param into srand so it's non-deterministic
-    srand(93);
+    srand(77);
 
     // set baud rate to 500,000 (page 200 datasheet)
     UBRR0 = 0;
