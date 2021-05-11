@@ -3,6 +3,8 @@
 #define ONE_MIN 60
 #define THREE_MINS 180
 #define CYCLES 12
+#define SEED 9823
+#define MAX_FREQ 80
 
 // required libraries
 #include <avr/io.h>
@@ -55,7 +57,7 @@ void blink_led(int freq, int on_duration, int off_duration) {
 // the UART Data Register (UDR)
 ISR(USART0_RX_vect) {
 
-    // toggle on inputReceived variable
+    // toggle on
     inputReceived = 1;
 }
 
@@ -69,6 +71,7 @@ void print_random_freq(int freq) {
 //        UDR0 = report[i];
 //        _delay_ms(5);
 //    }
+
     UDR0 = '\r';
     UDR0 = '\n';
 
@@ -78,13 +81,30 @@ void print_random_freq(int freq) {
 }
 
 // return true if the absolute difference between a and b is less
-// than 5, else return false.
-int plus_minus_5(int a, int b) {
-    return (abs(a - b) < 5);
+// than n, else return false.
+int plus_minus_n(int a, int b, int n) {
+    return (abs(a - b) < n);
 }
 
+
+// randomise the frequency based on the protocol rules. return the frequency (freq).
+int randomise_freq(int freq, int prevFreq) {
+
+    // if freq equals 10, 40 or prevFreq (plus or minus 5), then randomise it
+    while (plus_minus_n(freq, 10, 5) ||
+           plus_minus_n(freq, 40, 5) ||
+           plus_minus_n(freq, prevFreq, 5)) {
+
+        // randomise freq (mod80 to ensure that 0 <= freq <= 80)
+        freq = rand() % MAX_FREQ;
+    }
+
+    return freq;
+}
+
+
 // given the protocol, run the experiment cycles
-void run_cycle(Protocol protocol) {
+void run_experiment(Protocol protocol) {
 
     int freq;
     int prevFreq = 10;
@@ -111,21 +131,15 @@ void run_cycle(Protocol protocol) {
 
         if (protocol == RANDOM) {
 
-            // if the frequency (freq) equals 10, 40 or same as previous
-            // loop (prevFreq) plus or minus 5, then randomise it
-            while (plus_minus_5(freq, 10) || plus_minus_5(freq, 40) || plus_minus_5(freq, prevFreq)) {
-
-                // rand mod80 to ensure that 0 <= freq >= 80
-                freq = rand() % 80;
-            }
-
+            freq = randomise_freq(freq, prevFreq);
             prevFreq = freq;
             print_random_freq(freq);
         }
 //        blink_led(freq, ONE_MIN, THREE_MINS);
-        blink_led(freq, 2, 2);  //todo (for testing only)
+        blink_led(freq, 2, 2);  // todo - for testing only
     }
 }
+
 
 //void clear_screen() {
 //
@@ -136,12 +150,13 @@ void run_cycle(Protocol protocol) {
 //    UDR0 = '\n';
 //}
 
+
 // setup hardware including a random seed, baud rate for serial io, enable
 // interrupts, and set data direction on pins
 void init_hardware() {
 
-    // TODO feed random param into srand so it's non-deterministic
-    srand(77);
+    // TODO feed non-constant param so it's non-deterministic
+    srand(SEED);
 
     // set baud rate to 500,000 (page 200 datasheet)
     UBRR0 = 0;
@@ -156,14 +171,15 @@ void init_hardware() {
 //    clear_screen();
 
     // set pins 2 and 3 on port B to be outputs.
-    // pin 3 for led, pin 2 for signal to 2p system.
+    // pin 3 for led, pin 2 for signal to 2-photon system.
     DDRB = (1 << 3) | (1 << 2);
 }
 
-// Send visual indicator that experiment cycles have ended
-void end_cycle() {
 
-    // TODO signal experiment end to 2 photon system
+// Send visual indicator that experiment cycles have ended
+void end_experiment() {
+
+    // todo - signal experiment end to 2 photon system
 
     // serial io indicator for end of experiment
     UDR0 = '\r';
@@ -171,11 +187,19 @@ void end_cycle() {
     _delay_ms(2);
     UDR0 = '-';
 
-    // toggle off inputReceived variable
+    // toggle off
     inputReceived = 0;
 }
 
-// program entry //TODO address compiler warning!
+
+// signal experiment start to 2-photon system. High output on pin 2 port B
+void signal_start() {
+//    todo - implement this after we do the 2p sync training
+//    PINB = (1 << DDB2);
+}
+
+
+// program entry
 int main() {
 
     init_hardware();
@@ -187,10 +211,10 @@ int main() {
 
             // extract character from UART Data register
             char protocol = UDR0;
+            signal_start();
 
-            // TODO signal experiment start to 2 photon system PINB = (1 << DDB2)
-            run_cycle(protocol);
-            end_cycle();
+            run_experiment(protocol);
+            end_experiment();
         }
     }
 }
